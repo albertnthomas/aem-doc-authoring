@@ -264,18 +264,36 @@ function createOptimizedPicture(
   breakpoints = [{ media: '(min-width: 600px)', width: '2000' }, { width: '750' }],
 ) {
   const url = !src.startsWith('http') ? new URL(src, window.location.href) : new URL(src);
+  const picture = document.createElement('picture');
   const { origin, pathname } = url;
   const ext = pathname.split('.').pop();
 
-  // Create maui-image element instead of picture
-  const mauiImage = document.createElement('maui-image');
-  mauiImage.setAttribute('src', `${origin}${pathname}?width=${breakpoints[breakpoints.length - 1].width}&format=${ext}&optimize=medium`);
-  mauiImage.setAttribute('alt', alt);
-  mauiImage.setAttribute('width', breakpoints[breakpoints.length - 1].width);
-  mauiImage.setAttribute('height', 'auto');
-  mauiImage.setAttribute('loading', eager ? 'eager' : 'lazy');
+  // webp
+  breakpoints.forEach((br) => {
+    const source = document.createElement('source');
+    if (br.media) source.setAttribute('media', br.media);
+    source.setAttribute('type', 'image/webp');
+    source.setAttribute('srcset', `${origin}${pathname}?width=${br.width}&format=webply&optimize=medium`);
+    picture.appendChild(source);
+  });
 
-  return mauiImage;
+  // fallback
+  breakpoints.forEach((br, i) => {
+    if (i < breakpoints.length - 1) {
+      const source = document.createElement('source');
+      if (br.media) source.setAttribute('media', br.media);
+      source.setAttribute('srcset', `${origin}${pathname}?width=${br.width}&format=${ext}&optimize=medium`);
+      picture.appendChild(source);
+    } else {
+      const img = document.createElement('img');
+      img.setAttribute('loading', eager ? 'eager' : 'lazy');
+      img.setAttribute('alt', alt);
+      picture.appendChild(img);
+      img.setAttribute('src', `${origin}${pathname}?width=${br.width}&format=${ext}&optimize=medium`);
+    }
+  });
+
+  return picture;
 }
 
 /**
@@ -346,44 +364,8 @@ function decorateButtons(element) {
       const up = a.parentElement;
       const twoup = a.parentElement.parentElement;
       if (!a.querySelector('img')) {
-        let buttonType = 'primary';
         if (up.childNodes.length === 1 && (up.tagName === 'P' || up.tagName === 'DIV')) {
-          buttonType = 'default';
-        }
-        if (
-          up.childNodes.length === 1
-          && up.tagName === 'STRONG'
-          && twoup.childNodes.length === 1
-          && twoup.tagName === 'P'
-        ) {
-          buttonType = 'primary';
-        }
-        if (
-          up.childNodes.length === 1
-          && up.tagName === 'EM'
-          && twoup.childNodes.length === 1
-          && twoup.tagName === 'P'
-        ) {
-          buttonType = 'secondary';
-        }
-
-        // Create maui-button
-        const mauiButton = document.createElement('maui-button');
-        mauiButton.setAttribute('type', buttonType);
-        mauiButton.setAttribute('size', 'medium');
-        mauiButton.setAttribute('width', 'auto');
-        mauiButton.textContent = a.textContent;
-
-        // Preserve link functionality
-        if (a.href) {
-          mauiButton.setAttribute('onclick', `window.location.href='${a.href}'`);
-        }
-
-        // Replace the anchor with maui-button
-        a.replaceWith(mauiButton);
-
-        // Add button-container class to parent
-        if (up.childNodes.length === 1 && (up.tagName === 'P' || up.tagName === 'DIV')) {
+          a.className = 'button'; // default
           up.classList.add('button-container');
         }
         if (
@@ -392,6 +374,7 @@ function decorateButtons(element) {
           && twoup.childNodes.length === 1
           && twoup.tagName === 'P'
         ) {
+          a.className = 'button primary';
           twoup.classList.add('button-container');
         }
         if (
@@ -400,6 +383,7 @@ function decorateButtons(element) {
           && twoup.childNodes.length === 1
           && twoup.tagName === 'P'
         ) {
+          a.className = 'button secondary';
           twoup.classList.add('button-container');
         }
       }
