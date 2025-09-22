@@ -1,23 +1,31 @@
 /*
  * Accordion Block
- * Recreate an accordion
- * https://www.hlx.live/developer/block-collection/accordion
+ * Adapted to use Maui Design System's maui-collapsible-item
  */
 
 export default function decorate(block) {
-  [...block.children].forEach((row) => {
-    // decorate accordion item label
+  [...block.children].forEach((row, idx) => {
+    // Get label and body
     const label = row.children[0];
-    const summary = document.createElement('summary');
-    summary.className = 'accordion-item-label';
-    summary.append(...label.childNodes);
-    // decorate accordion item body
     const body = row.children[1];
-    body.className = 'accordion-item-body';
-    // decorate accordion item
-    const details = document.createElement('details');
-    details.className = 'accordion-item';
-    details.append(summary, body);
-    row.replaceWith(details);
+
+    // Create maui-collapsible-item
+    const mauiAccordion = document.createElement('maui-collapsible-item');
+    mauiAccordion.setAttribute('id', `accordion-item-section-${idx}`);
+    mauiAccordion.setAttribute('headline', label.textContent.trim());
+    //mauiAccordion.setAttribute('expanded', 'false'); // Set to true if you want it open by default
+
+    // If subheadline exists, add it as a richtext div
+    if (label.querySelector('.subheadline')) {
+      const subheadlineDiv = document.createElement('div');
+      subheadlineDiv.className = 'richtext';
+      subheadlineDiv.innerHTML = `<p>${label.querySelector('.subheadline').textContent}</p>`;
+      mauiAccordion.appendChild(subheadlineDiv);
+    }
+
+    // Add body/content
+    mauiAccordion.appendChild(body);
+
+    row.replaceWith(mauiAccordion);
   });
 }

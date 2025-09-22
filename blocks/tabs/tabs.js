@@ -1,47 +1,29 @@
 // eslint-disable-next-line import/no-unresolved
-import { toClassName } from '../../scripts/aem.js';
+//import { toClassName } from '../../scripts/maui-design-system.js';
 
 export default async function decorate(block) {
-  // build tablist
-  const tablist = document.createElement('div');
-  tablist.className = 'tabs-list';
-  tablist.setAttribute('role', 'tablist');
+  // Add custom class to body
+  document.body.classList.add('maui-theme-lh');
 
-  // decorate tabs and tabpanels
-  const tabs = [...block.children].map((child) => child.firstElementChild);
-  tabs.forEach((tab, i) => {
-    const id = toClassName(tab.textContent);
+  // Create the custom tab control
+  const tabControl = document.createElement('maui-tab-control');
+  tabControl.setAttribute('theme', 'lh'); 
+  tabControl.setAttribute('spreadtabs', ''); 
 
-    // decorate tabpanel
-    const tabpanel = block.children[i];
-    tabpanel.className = 'tabs-panel';
-    tabpanel.id = `tabpanel-${id}`;
-    tabpanel.setAttribute('aria-hidden', !!i);
-    tabpanel.setAttribute('aria-labelledby', `tab-${id}`);
-    tabpanel.setAttribute('role', 'tabpanel');
 
-    // build tab button
-    const button = document.createElement('button');
-    button.className = 'tabs-tab';
-    button.id = `tab-${id}`;
-    button.innerHTML = tab.innerHTML;
-    button.setAttribute('aria-controls', `tabpanel-${id}`);
-    button.setAttribute('aria-selected', !i);
-    button.setAttribute('role', 'tab');
-    button.setAttribute('type', 'button');
-    button.addEventListener('click', () => {
-      block.querySelectorAll('[role=tabpanel]').forEach((panel) => {
-        panel.setAttribute('aria-hidden', true);
-      });
-      tablist.querySelectorAll('button').forEach((btn) => {
-        btn.setAttribute('aria-selected', false);
-      });
-      tabpanel.setAttribute('aria-hidden', false);
-      button.setAttribute('aria-selected', true);
-    });
-    tablist.append(button);
-    tab.remove();
+  [...block.children].forEach((child) => {
+    const tab = child.firstElementChild;
+    const panel = document.createElement('maui-tab-control-panel');
+    panel.setAttribute('name', tab.textContent.trim());
+    // Move all content except the tab label into the panel
+    while (tab.nextSibling) {
+      panel.appendChild(tab.nextSibling);
+    }
+    tabControl.appendChild(panel);
+    child.remove(); // Remove the old child
   });
 
-  block.prepend(tablist);
+  // Replace the block's content with the custom tab control
+  block.innerHTML = '';
+  block.appendChild(tabControl);
 }

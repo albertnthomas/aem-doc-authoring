@@ -1,34 +1,46 @@
 /*
  * Table Block
- * Recreate a table
- * https://www.hlx.live/developer/block-collection/table
+ * Recreate a table using Maui Design System custom elements
  */
 
-function buildCell(rowIndex) {
-  const cell = rowIndex ? document.createElement('td') : document.createElement('th');
-  if (!rowIndex) cell.setAttribute('scope', 'col');
-  return cell;
-}
-
 export default async function decorate(block) {
-  const table = document.createElement('table');
-  const thead = document.createElement('thead');
-  const tbody = document.createElement('tbody');
+  // Create Maui table elements
+  const mauiTable = document.createElement('maui-table');
+  mauiTable.setAttribute('firstColHeader', '');
+  mauiTable.setAttribute('id', 'dynamic-table');
 
+  const mauiTableCaption = document.createElement('maui-table-caption');
+  mauiTable.appendChild(mauiTableCaption);
+
+  // Header
   const header = !block.classList.contains('no-header');
-  if (header) table.append(thead);
-  table.append(tbody);
-
-  [...block.children].forEach((child, i) => {
-    const row = document.createElement('tr');
-    if (header && i === 0) thead.append(row);
-    else tbody.append(row);
-    [...child.children].forEach((col) => {
-      const cell = buildCell(header ? i : i + 1);
-      cell.innerHTML = col.innerHTML;
-      row.append(cell);
+  if (header) {
+    const mauiTableHead = document.createElement('maui-table-head');
+    const mauiTableRow = document.createElement('maui-table-row');
+    [...block.children[0].children].forEach((col) => {
+      const mauiTableCell = document.createElement('maui-table-cell');
+      mauiTableCell.innerHTML = col.innerHTML;
+      mauiTableRow.appendChild(mauiTableCell);
     });
+    mauiTableHead.appendChild(mauiTableRow);
+    mauiTable.appendChild(mauiTableHead);
+  }
+
+  // Body
+  const mauiTableBody = document.createElement('maui-table-body');
+  [...block.children].forEach((child, i) => {
+    // Skip header row if present
+    if (header && i === 0) return;
+    const mauiTableRow = document.createElement('maui-table-row');
+    [...child.children].forEach((col) => {
+      const mauiTableCell = document.createElement('maui-table-cell');
+      mauiTableCell.innerHTML = col.innerHTML;
+      mauiTableRow.appendChild(mauiTableCell);
+    });
+    mauiTableBody.appendChild(mauiTableRow);
   });
+  mauiTable.appendChild(mauiTableBody);
+
   block.innerHTML = '';
-  block.append(table);
+  block.append(mauiTable);
 }
