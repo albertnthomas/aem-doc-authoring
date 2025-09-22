@@ -232,12 +232,82 @@ export default async function decorate(block) {
   toggleMenu(nav, navSections, isDesktop.matches);
   isDesktop.addEventListener('change', () => toggleMenu(nav, navSections, isDesktop.matches));
 
-  const navWrapper = document.createElement('div');
-  navWrapper.className = 'nav-wrapper';
-  navWrapper.append(nav);
-  block.append(navWrapper);
+  // build maui sub-navigation from existing nav structure (non-destructive)
+  let tabItems = [];
+  if (navSections) {
+    // robustly find top-level nav items
+    const navDrops = navSections.querySelectorAll('li.nav-drop') || navSections.querySelectorAll('li');
+    tabItems = Array.from(navDrops).map((li) => {
+      const name = getDirectTextContent(li).trim();
+      const firstLink = li.querySelector('ul li a') || li.querySelector(':scope > a');
+      const href = firstLink ? firstLink.getAttribute('href') : '#';
+      return { name, href };
+    }).filter(t => t.name); // remove empty labels
+  }
+
+  // Create maui-sub-navigation element (visual navigation)
+  if (tabItems.length) {
+    const mauiSubNav = document.createElement('maui-sub-navigation');
+    mauiSubNav.setAttribute('activeIndex', '0');
+    mauiSubNav.setAttribute('theme', 'lh');
+
+    tabItems.forEach((tab) => {
+      const mauiTab = document.createElement('maui-sub-navigation-tab');
+      mauiTab.setAttribute('name', tab.name);
+      mauiTab.setAttribute('href', tab.href);
+      mauiSubNav.appendChild(mauiTab);
+    });
+
+    // build brand element from legacy nav (if present)
+    const brandEl = nav.querySelector('.nav-brand a') || nav.querySelector('.nav-brand');
+    let brandWrapper = null;
+    if (brandEl) {
+      brandWrapper = document.createElement('div');
+      brandWrapper.className = 'nav-brand-maui';
+      const mauiBrand = document.createElement('maui-headline');
+      if (brandEl.tagName === 'A' && brandEl.getAttribute('href')) {
+        const a = document.createElement('a');
+        a.href = brandEl.getAttribute('href');
+        a.textContent = brandEl.textContent.trim();
+        mauiBrand.appendChild(a);
+      } else {
+        mauiBrand.textContent = brandEl.textContent.trim();
+      }
+      brandWrapper.appendChild(mauiBrand);
+    }
+   
+
+    // create a visible nav container (semantic <nav>) and place brand inline with maui nav
+    const visibleNav = document.createElement('nav');
+    visibleNav.className = 'nav-wrapper maui-visible-nav';
+    visibleNav.setAttribute('aria-label', 'primary-navigation');
+    visibleNav.style.display = 'flex';
+    visibleNav.style.alignItems = 'center';
+    visibleNav.style.gap = '1rem';
+
+    if (brandWrapper) {
+      brandWrapper.style.flex = '0 0 auto';
+      visibleNav.appendChild(brandWrapper);
+    }
+
+    // allow mauiSubNav to grow and sit inline with brand
+    mauiSubNav.style.flex = '1 1 auto';
+    mauiSubNav.style.minWidth = '0'; // allow flex shrinking
+    visibleNav.appendChild(mauiSubNav);
+
+    // append visible nav followed by hidden legacy nav (keeps logic intact)
+    block.appendChild(visibleNav);
+    block.appendChild(hiddenNavWrapper);
+  } else {
+    // fallback: keep original nav wrapper if no tabs extracted (make sure nav remains visible)
+    const navWrapper = document.createElement('div');
+    navWrapper.className = 'nav-wrapper';
+    navWrapper.append(nav);
+    block.append(navWrapper);
+  }
 
   if (getMetadata('breadcrumbs').toLowerCase() === 'true') {
-    navWrapper.append(await buildBreadcrumbs());
+    const navWrapperEl = block.querySelector('.nav-wrapper');
+    if (navWrapperEl) navWrapperEl.append(await buildBreadcrumbs());
   }
 }
