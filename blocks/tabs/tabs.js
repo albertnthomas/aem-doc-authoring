@@ -3,7 +3,7 @@
 
 export default async function decorate(block) {
   // Add custom class to body
-  document.body.classList.add('maui-theme-lh');
+  
 
   // Create the custom tab control
   const tabControl = document.createElement('maui-tab-control');
